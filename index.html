@@ -2,7 +2,7 @@
 <html lang="pt-br" class="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Grade Escolar Premium - E.E. Prof. Juvenília</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Biblioteca para gerar PDF como imagem de alta fidelidade -->
@@ -13,8 +13,8 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#14B8A6', // Verde Turquesa (Teal 500)
-                        accent: '#0F766E',  // Teal 700 para contraste
+                        primary: '#14B8A6', // Verde Turquesa
+                        accent: '#0F766E',  
                         darkBg: '#0F172A',
                         darkCard: '#1E293B'
                     },
@@ -32,15 +32,19 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
         
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
+            overflow-x: hidden;
+        }
         .font-digital { font-family: 'JetBrains Mono', monospace; }
 
-        /* Scrollbar personalizada no tom turquesa */
+        /* Scrollbar Turquesa */
         .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #14B8A6; border-radius: 10px; }
 
-        /* Lógica Responsiva Adaptativa */
+        /* Visibilidade Híbrida */
         .mobile-grid { display: block; }
         .desktop-table { display: none; }
         @media (min-width: 1025px) {
@@ -48,7 +52,7 @@
             .desktop-table { display: table; }
         }
 
-        /* Otimização para Exportação PDF em Página Única */
+        /* Enquadramento Perfeito para PDF */
         .is-generating-pdf .mobile-grid { display: none !important; }
         .is-generating-pdf .desktop-table { display: table !important; width: 1100px !important; margin: 0 !important; }
         .is-generating-pdf #exportArea { 
@@ -78,12 +82,12 @@
             cursor: text;
         }
 
-        /* Destaques de Tempo Real */
+        /* Estilos de Destaque em Tempo Real */
         .current-row { background-color: rgba(20, 184, 166, 0.05) !important; }
         .active-cell { background-color: rgba(20, 184, 166, 0.15) !important; box-shadow: inset 0 0 15px rgba(20, 184, 166, 0.1); }
-        .current-card { border: 2px solid #14B8A6 !important; transform: scale(1.02); box-shadow: 0 15px 30px -10px rgba(20, 184, 166, 0.3); }
+        .current-card { border: 2px solid #14B8A6 !important; transform: translateY(-4px); box-shadow: 0 15px 30px -10px rgba(20, 184, 166, 0.4); }
 
-        /* Componentes de Interface */
+        /* Toast e Modal */
         #toast { visibility: hidden; min-width: 250px; background: #1e293b; color: #fff; border-radius: 12px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); }
         #toast.show { visibility: visible; animation: slideUp 0.4s, fadeOut 0.4s 2.5s; }
         @keyframes fadeOut { from {opacity: 1;} to {opacity: 0;} }
@@ -91,18 +95,16 @@
         .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-darkBg text-slate-900 dark:text-slate-100 transition-colors duration-300 min-h-screen flex flex-col">
+<body class="bg-slate-100 dark:bg-darkBg text-slate-900 dark:text-slate-100 transition-colors duration-300 min-h-screen flex flex-col">
 
-    <!-- Notificações Toast -->
     <div id="toast" class="flex items-center gap-3 shadow-2xl border-l-4 border-primary">
         <span id="toastMsg">Mensagem</span>
     </div>
 
-    <!-- Modal de Confirmação para Limpeza de Dados -->
     <div id="confirmModal" class="modal-backdrop px-4">
         <div class="bg-white dark:bg-darkCard p-6 rounded-3xl max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-700 animate-slide-up">
             <h3 class="text-xl font-black mb-2">Limpar Grade?</h3>
-            <p class="text-slate-500 text-sm mb-6">Todas as suas edições personalizadas serão perdidas.</p>
+            <p class="text-slate-500 text-sm mb-6">Suas alterações locais serão removidas permanentemente.</p>
             <div class="flex gap-3">
                 <button onclick="closeModal()" class="flex-1 py-3 rounded-xl font-bold bg-slate-100 dark:bg-slate-800">Cancelar</button>
                 <button onclick="resetData()" class="flex-1 py-3 rounded-xl font-bold bg-primary text-white">Resetar</button>
@@ -110,56 +112,50 @@
         </div>
     </div>
 
-    <!-- Efeito de Carregamento para PDF -->
     <div id="pdfLoader" class="hidden fixed inset-0 bg-slate-900/90 z-[1000] flex-col items-center justify-center text-white backdrop-blur-md">
         <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p class="text-xl font-black">Processando Imagem Turquesa...</p>
+        <p class="text-xl font-black tracking-widest">GERANDO PDF PREMIUM</p>
     </div>
 
-    <!-- Barra de Navegação Superior -->
     <nav class="sticky top-0 z-[100] bg-white/90 dark:bg-darkCard/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 no-print w-full">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2">
-                    <div class="bg-primary p-2 rounded-2xl shadow-lg shadow-teal-500/40">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M8 7h6"/><path d="M8 11h8"/></svg>
-                    </div>
-                    <span class="font-black text-lg hidden md:inline">Grade<span class="text-primary">Master</span></span>
+            <div class="flex items-center gap-3">
+                <div class="bg-primary p-2 rounded-xl shadow-lg shadow-teal-500/40">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M8 7h6"/><path d="M8 11h8"/></svg>
                 </div>
-
-                <!-- Monitor Digital em Tempo Real -->
-                <div class="flex items-center bg-primary px-3 py-1.5 rounded-xl shadow-md">
-                    <div class="flex items-center gap-2 border-r border-white/20 pr-3 mr-3">
-                        <span id="liveClock" class="font-black text-white text-xs sm:text-sm tracking-tighter font-digital">00:00:00</span>
-                        <span id="schoolStatus" class="w-2.5 h-2.5 rounded-full bg-red-800 border border-white/20"></span>
+                
+                <div class="flex items-center bg-teal-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-teal-100 dark:border-slate-700 shadow-sm">
+                    <div class="flex items-center gap-2 border-r border-teal-200 dark:border-slate-600 pr-3 mr-3">
+                        <span id="liveClock" class="font-black text-primary text-xs sm:text-sm tracking-tighter font-digital">00:00:00</span>
+                        <span id="schoolStatus" class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
                     </div>
-                    <div id="liveDate" class="font-bold text-white text-[9px] sm:text-[10px] uppercase opacity-90 tracking-tight">00/00/0000 • CARREGANDO</div>
+                    <div id="liveDate" class="font-bold text-slate-500 dark:text-slate-400 text-[9px] sm:text-[10px] uppercase tracking-tight">00/00/2026</div>
                 </div>
             </div>
 
             <div class="flex items-center gap-2">
-                <button id="themeToggle" class="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <button id="themeToggle" class="p-2.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
                     <svg id="sunIcon" class="hidden dark:block w-5 h-5 text-teal-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
                     <svg id="moonIcon" class="block dark:hidden w-5 h-5 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
                 </button>
 
-                <button id="toggleEdit" class="px-4 py-2 rounded-xl font-bold text-xs bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white transition-all">
+                <button id="toggleEdit" class="px-4 py-2 rounded-xl font-bold text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary transition-all">
                     <span id="editText">Editar</span>
                 </button>
 
                 <div class="relative group no-print">
                     <button class="px-5 py-2 bg-primary text-white rounded-xl font-black text-xs shadow-lg shadow-teal-500/30 active:scale-95 transition-all flex items-center gap-2">
-                        ACÇÕES
+                        SALVAR
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="m19 9-7 7-7-7"/></svg>
                     </button>
-                    <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-darkCard rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 p-2">
-                        <button onclick="generatePDF()" class="w-full text-left p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold flex items-center gap-3">
+                    <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-darkCard rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 p-2 overflow-hidden">
+                        <button onclick="generatePDF()" class="w-full text-left p-3 hover:bg-teal-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold flex items-center gap-3">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
-                            Salvar PDF
+                            Baixar PDF
                         </button>
-                        <button onclick="shareLink()" class="w-full text-left p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold flex items-center gap-3">
+                        <button onclick="shareLink()" class="w-full text-left p-3 hover:bg-teal-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold flex items-center gap-3">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/></svg>
-                            Partilhar Link
+                            Compartilhar
                         </button>
                         <div class="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
                         <button onclick="openModal()" class="w-full text-left p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl text-xs font-bold text-red-500 flex items-center gap-3">
@@ -172,45 +168,45 @@
         </div>
     </nav>
 
-    <!-- Área de Conteúdo Principal -->
-    <div class="flex-1 w-full py-6 sm:py-10 px-2 sm:px-6 flex flex-col items-center">
-        <main id="mainContainer" class="w-full max-w-[1150px]">
-            <div id="exportArea" class="bg-white dark:bg-darkCard rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700 print-container">
+    <!-- Content Wrapper - Centralização Inteligente -->
+    <div class="flex-1 w-full flex flex-col justify-start lg:justify-center items-center p-2 sm:p-6 lg:p-8">
+        <main id="mainContainer" class="w-full max-w-6xl">
+            <div id="exportArea" class="bg-white dark:bg-darkCard rounded-[1.5rem] lg:rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700 print-container">
                 
                 <!-- Cabeçalho Institucional -->
-                <header class="p-8 md:p-12 border-b-[10px] border-primary bg-slate-50/50 dark:bg-slate-800/30 flex flex-col md:flex-row gap-8 md:gap-12 items-center relative overflow-hidden">
-                    <div class="w-24 h-24 md:w-36 md:h-36 bg-primary rounded-[2.8rem] flex items-center justify-center shadow-2xl shadow-teal-500/30 shrink-0 text-white relative z-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 md:w-20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2v-5"/></svg>
+                <header class="p-6 md:p-10 border-b-[8px] border-primary bg-slate-50/30 dark:bg-slate-800/20 flex flex-col md:flex-row gap-6 md:gap-10 items-center">
+                    <div class="w-20 h-20 md:w-32 md:h-32 bg-primary rounded-[2.2rem] flex items-center justify-center shadow-xl shadow-teal-500/20 shrink-0 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 md:w-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2v-5"/></svg>
                     </div>
                     
-                    <div class="flex-1 text-center md:text-left w-full relative z-10">
-                        <h2 class="text-2xl md:text-4xl font-[900] text-slate-900 dark:text-white mb-8 tracking-tight leading-[1.1]">
+                    <div class="flex-1 text-center md:text-left w-full">
+                        <h2 class="text-xl md:text-3xl font-[900] text-slate-900 dark:text-white mb-6 leading-tight tracking-tight">
                             <textarea class="editable-input uppercase w-full" data-key="schoolName" readonly oninput="autoResizeTitle(this)">ESCOLA ESTADUAL PROFESSORA JUVENÍLIA FERREIRA DOS SANTOS</textarea>
                         </h2>
                         
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-[10px] md:text-xs font-bold uppercase">
-                            <div class="flex flex-col gap-1 border-l-4 border-primary pl-4 py-1">
-                                <span class="text-slate-400">Diretor</span>
-                                <input class="editable-input text-slate-900 dark:text-slate-100 font-bold" data-key="staff1" value="LUIZ ANTÔNIO DE SOUZA" readonly>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-[10px] md:text-xs font-bold uppercase tracking-wide">
+                            <div class="border-l-4 border-primary pl-3 py-1 bg-slate-100/50 dark:bg-slate-800/40 rounded-r-lg">
+                                <span class="text-slate-400 block mb-0.5">Diretor</span>
+                                <input class="editable-input text-slate-800 dark:text-slate-100 font-bold" data-key="staff1" value="LUIZ ANTÔNIO DE SOUZA" readonly>
                             </div>
-                            <div class="flex flex-col gap-1 border-l-4 border-primary pl-4 py-1">
-                                <span class="text-slate-400">Vice</span>
-                                <input class="editable-input text-slate-900 dark:text-slate-100 font-bold" data-key="staff2" value="TÚLIO SIQUEIRA DE OLIVEIRA" readonly>
+                            <div class="border-l-4 border-primary pl-3 py-1 bg-slate-100/50 dark:bg-slate-800/40 rounded-r-lg">
+                                <span class="text-slate-400 block mb-0.5">Vice</span>
+                                <input class="editable-input text-slate-800 dark:text-slate-100 font-bold" data-key="staff2" value="TÚLIO SIQUEIRA DE OLIVEIRA" readonly>
                             </div>
-                            <div class="flex flex-col gap-1 border-l-4 border-primary pl-4 py-1">
-                                <span class="text-slate-400">Supervisão</span>
-                                <input class="editable-input text-slate-900 dark:text-slate-100 font-bold" data-key="staff3" value="JACQUELINE CATALUNHA" readonly>
+                            <div class="border-l-4 border-primary pl-3 py-1 bg-slate-100/50 dark:bg-slate-800/40 rounded-r-lg">
+                                <span class="text-slate-400 block mb-0.5">Supervisão</span>
+                                <input class="editable-input text-slate-800 dark:text-slate-100 font-bold" data-key="staff3" value="JACQUELINE CATALUNHA" readonly>
                             </div>
-                            <div class="flex flex-col gap-1 border-l-4 border-primary pl-4 py-1">
-                                <span class="text-slate-400">Coordenação</span>
-                                <input class="editable-input text-slate-900 dark:text-slate-100 font-bold" data-key="staff4" value="GIULIANA MARTIRA FERREIRA" readonly>
+                            <div class="border-l-4 border-primary pl-3 py-1 bg-slate-100/50 dark:bg-slate-800/40 rounded-r-lg">
+                                <span class="text-slate-400 block mb-0.5">Coordenação</span>
+                                <input class="editable-input text-slate-800 dark:text-slate-100 font-bold" data-key="staff4" value="GIULIANA MARTIRA FERREIRA" readonly>
                             </div>
                         </div>
                     </div>
                 </header>
 
-                <!-- Barra de Informações e Progresso -->
-                <div class="px-8 py-5 bg-slate-100 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                <!-- Info Bar & Progresso -->
+                <div class="px-6 py-4 bg-white dark:bg-darkCard border-b border-slate-200 dark:border-slate-800 flex flex-col gap-4">
                     <div class="flex flex-wrap justify-between items-center gap-4">
                         <div class="flex gap-6 font-black text-[10px] md:text-sm uppercase text-primary tracking-widest">
                             <div class="flex items-center gap-2">
@@ -223,44 +219,43 @@
                             </div>
                         </div>
                         
-                        <div class="flex flex-wrap gap-3 items-center">
-                            <div class="text-[10px] font-bold bg-white dark:bg-slate-800 px-4 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <div class="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 px-4 py-1.5 rounded-xl flex items-center gap-2">
                                 <span class="opacity-50 text-slate-400 uppercase">Entrada:</span>
                                 <input id="startTimeInput" class="editable-input w-12 text-center font-black text-primary text-base" data-key="t1" value="19:00" readonly>
                             </div>
-                            <div class="text-[10px] font-bold bg-white dark:bg-slate-800 px-4 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                            <div class="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 px-4 py-1.5 rounded-xl flex items-center gap-2">
                                 <span class="opacity-50 text-slate-400 uppercase">Saída:</span>
                                 <span id="endTimeDisplay" class="font-black text-slate-900 dark:text-white text-base">--:--</span>
                             </div>
-                            <div class="text-[10px] font-black bg-primary text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2">
+                            <div class="text-[10px] font-black bg-primary text-white px-4 py-2 rounded-xl shadow-md">
                                 <span id="totalDurationDisplay">0H 00MIN</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Barra de Progresso Real -->
-                    <div class="w-full no-pdf">
-                        <div class="flex justify-between items-center mb-1 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">
-                            <span>Progresso Diário</span>
+                    <div class="w-full no-pdf px-1">
+                        <div class="flex justify-between items-center mb-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">
+                            <span>Jornada de Estudo</span>
                             <span id="progressPercentage" class="text-primary font-bold">0%</span>
                         </div>
-                        <div class="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
+                        <div class="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div id="progressBar" class="h-full w-0 bg-primary rounded-full relative transition-all duration-1000">
-                                <div class="absolute inset-0 bg-white/20 animate-pulse-slow"></div>
+                                <div class="absolute inset-0 bg-white/30 animate-pulse-slow"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Visualização em Cards (Mobile) -->
-                <div id="mobileSchedule" class="mobile-grid p-4 space-y-10 bg-slate-50 dark:bg-slate-900/10"></div>
+                <!-- Lista Mobile -->
+                <div id="mobileSchedule" class="mobile-grid p-4 space-y-8 bg-slate-50 dark:bg-slate-900/10"></div>
 
-                <!-- Visualização em Tabela (Desktop) -->
+                <!-- Tabela Desktop -->
                 <div class="desktop-table w-full overflow-x-auto custom-scroll">
                     <table class="w-full border-collapse">
                         <thead>
                             <tr class="bg-slate-50 dark:bg-slate-800 text-[11px] font-black uppercase tracking-widest text-slate-400">
-                                <th class="p-4 border-r border-slate-100 dark:border-slate-700 w-36">Horário</th>
+                                <th class="p-4 border-r border-slate-100 dark:border-slate-700 w-40">Horário</th>
                                 <th data-day-idx="1" class="p-4 border-r border-slate-100 dark:border-slate-700">Segunda</th>
                                 <th data-day-idx="2" class="p-4 border-r border-slate-100 dark:border-slate-700">Terça</th>
                                 <th data-day-idx="3" class="p-4 border-r border-slate-100 dark:border-slate-700">Quarta</th>
@@ -273,16 +268,16 @@
                 </div>
 
                 <!-- Rodapé -->
-                <footer class="p-10 bg-slate-50/80 dark:bg-slate-900/40 border-t border-slate-100 dark:border-slate-800">
-                    <div class="flex flex-col md:flex-row justify-between items-center gap-10">
+                <footer class="p-8 bg-white dark:bg-darkCard border-t border-slate-200 dark:border-slate-800">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                         <div class="text-center md:text-left">
-                            <div class="flex items-center gap-2 mb-2 justify-center md:justify-start">
-                                <span class="w-8 h-1 bg-primary rounded-full"></span>
-                                <span class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300">Digital Grade System</span>
+                            <div class="flex items-center gap-2 mb-1 justify-center md:justify-start">
+                                <span class="w-6 h-1 bg-primary rounded-full"></span>
+                                <span class="text-[9px] font-black uppercase tracking-[0.4em] text-slate-300">Grade Master Premium</span>
                             </div>
-                            <span class="text-base font-bold tracking-tight">2026 • <span class="text-primary font-black uppercase">E.E. Professora Juvenília Ferreira</span></span>
+                            <span class="text-sm font-bold tracking-tight">2026 • <span class="text-primary font-black uppercase">E.E. Professora Juvenília Ferreira</span></span>
                         </div>
-                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Secretaria de Educação e Cultura</div>
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg">Secretaria de Educação e Cultura</div>
                     </div>
                 </footer>
             </div>
@@ -356,7 +351,7 @@
 
                 if (row.type === 'break') {
                     desktopHTML += `
-                        <tr data-row-idx="${rIdx}" class="bg-primary text-white border-y border-accent/20">
+                        <tr data-row-idx="${rIdx}" class="bg-primary text-white border-y border-teal-600/20">
                             <td class="p-4 text-center font-black text-[10px] border-r border-white/20">${timeLabel}</td>
                             <td colspan="5" class="p-4 text-center text-xl font-black uppercase tracking-[0.5em] italic opacity-80">${row.content}</td>
                         </tr>
@@ -365,20 +360,20 @@
                         d.content += `
                             <div data-card-row-idx="${rIdx}" data-card-day-idx="${d.dayIdx}" class="bg-teal-500/10 border-l-8 border-primary p-4 my-6 rounded-2xl text-center">
                                 <div class="text-[9px] font-black text-primary uppercase mb-1">INTERVALO • ${timeLabel}</div>
-                                <div class="text-sm font-black italic opacity-70">${row.content}</div>
+                                <div class="text-sm font-black italic opacity-70 dark:text-teal-200">${row.content}</div>
                             </div>
                         `;
                     });
                 } else {
                     let cells = `<td class="p-5 border-r border-slate-100 dark:border-slate-800 text-center bg-slate-50/50 dark:bg-slate-800/20">
                         <div class="text-[11px] font-black">${timeLabel}</div>
-                        <div class="text-[8px] font-bold text-slate-400 uppercase">${rIdx + 1 > 3 ? rIdx : rIdx + 1}º HORÁRIO</div>
+                        <div class="text-[8px] font-bold text-slate-400 uppercase">${rIdx >= 2 ? rIdx : rIdx + 1}º HORÁRIO</div>
                     </td>`;
                     
                     row.items.forEach((cell, cIdx) => {
                         const dayIdx = cIdx + 1;
                         cells += `
-                            <td data-day-idx="${dayIdx}" data-cell-id="r${rIdx}d${dayIdx}" class="p-4 border-r border-slate-100 dark:border-slate-800 text-center hover:bg-teal-50 transition-all">
+                            <td data-day-idx="${dayIdx}" data-cell-id="r${rIdx}d${dayIdx}" class="p-4 border-r border-slate-100 dark:border-slate-800 text-center hover:bg-teal-50 dark:hover:bg-slate-800/50 transition-all">
                                 <input class="editable-input font-black text-sm block mb-1" data-key="r${rIdx}c${cIdx}s" value="${cell[0]}" readonly>
                                 <div class="text-[10px] font-bold text-primary uppercase flex items-center justify-center gap-1 bg-teal-500/5 py-0.5 rounded">
                                     <input class="editable-input w-auto text-center" data-key="r${rIdx}c${cIdx}p" value="${cell[1]}" readonly>
@@ -405,7 +400,7 @@
             desktopBody.innerHTML = desktopHTML;
             let mobileFinal = '';
             mobileHTMLByDay.forEach(day => {
-                mobileFinal += `<section class="max-w-md mx-auto w-full"><h3 class="flex items-center gap-4 mb-6"><span class="px-6 py-2 bg-primary text-white font-black uppercase text-[11px] rounded-2xl shadow-xl shadow-teal-500/30">${day.day}</span><div class="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent"></div></h3>${day.content}</section>`;
+                mobileFinal += `<section class="w-full"><h3 class="flex items-center gap-4 mb-6"><span class="px-6 py-2 bg-primary text-white font-black uppercase text-[11px] rounded-2xl shadow-xl shadow-teal-500/30">${day.day}</span><div class="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent"></div></h3>${day.content}</section>`;
             });
             mobileSchedule.innerHTML = mobileFinal;
 
@@ -426,9 +421,7 @@
             const currentMins = now.getHours() * 60 + now.getMinutes();
             const isSchoolDay = currentDay >= 1 && currentDay <= 5;
             
-            // Limpeza segura de classes para evitar erros de seletores inválidos
-            const elementsToReset = document.querySelectorAll('.current-row, .active-cell, .current-card');
-            elementsToReset.forEach(el => {
+            document.querySelectorAll('.current-row, .active-cell, .current-card').forEach(el => {
                 el.classList.remove('current-row', 'active-cell', 'current-card');
             });
 
@@ -439,14 +432,13 @@
                 const start = hS * 60 + mS;
                 let end = hE * 60 + mE;
                 if (end < start) end += 24 * 60;
-                
                 if (currentMins >= start && currentMins < end) currentIdx = i;
             });
 
             const statusDot = document.getElementById('schoolStatus');
             if (isSchoolDay && currentIdx !== -1) {
                 if (statusDot) {
-                    statusDot.classList.remove('bg-red-800');
+                    statusDot.classList.remove('bg-red-500');
                     statusDot.classList.add('bg-green-500');
                 }
                 document.querySelector(`[data-row-idx="${currentIdx}"]`)?.classList.add('current-row');
@@ -455,11 +447,10 @@
             } else {
                 if (statusDot) {
                     statusDot.classList.remove('bg-green-500');
-                    statusDot.classList.add('bg-red-800');
+                    statusDot.classList.add('bg-red-500');
                 }
             }
 
-            // Cálculo do Progresso Escolar
             if (globalTimeline.length > 0) {
                 const startMins = globalTimeline[0].start.split(':').map(Number).reduce((h, m) => h * 60 + m);
                 let endMins = globalTimeline[globalTimeline.length - 1].end.split(':').map(Number).reduce((h, m) => h * 60 + m);
@@ -485,8 +476,8 @@
             document.body.classList.add('is-generating-pdf');
             const element = document.getElementById('exportArea');
             const opt = { 
-                margin: [10, 10], 
-                filename: 'Grade_Escolar_Turquesa.pdf', 
+                margin: [5, 5], 
+                filename: 'Grade_Escolar_Premium.pdf', 
                 image: { type: 'jpeg', quality: 1 }, 
                 html2canvas: { scale: 3, useCORS: true, windowWidth: 1200 }, 
                 jsPDF: { format: 'a4', orientation: 'landscape' } 
@@ -505,15 +496,12 @@
 
         function shareLink() {
             if (navigator.share) navigator.share({ title: 'Grade Escolar Premium', url: window.location.href });
-            else showToast("O seu navegador não suporta partilha nativa.");
+            else showToast("Navegador sem suporte a compartilhamento nativo.");
         }
 
         function openModal() { document.getElementById('confirmModal').style.display = 'flex'; }
         function closeModal() { document.getElementById('confirmModal').style.display = 'none'; }
-        function resetData() { 
-            localStorage.removeItem('grade_turquesa_v1'); 
-            window.location.reload(); 
-        }
+        function resetData() { localStorage.removeItem('grade_turquesa_premium'); window.location.reload(); }
 
         const toggleBtn = document.getElementById('toggleEdit');
         const editText = document.getElementById('editText');
@@ -533,20 +521,18 @@
                 const key = input.getAttribute('data-key');
                 if(key) data[key] = input.value;
             });
-            localStorage.setItem('grade_turquesa_v1', JSON.stringify(data));
+            localStorage.setItem('grade_turquesa_premium', JSON.stringify(data));
         }
 
         function loadData() {
-            const saved = localStorage.getItem('grade_turquesa_v1');
+            const saved = localStorage.getItem('grade_turquesa_premium');
             if (saved) {
                 const data = JSON.parse(saved);
                 document.querySelectorAll('.editable-input').forEach(input => {
                     const key = input.getAttribute('data-key');
                     if (data[key]) {
                         input.value = data[key];
-                        document.querySelectorAll(`[data-key="${key}"]`).forEach(el => {
-                            if (el !== input) el.value = data[key];
-                        });
+                        document.querySelectorAll(`[data-key="${key}"]`).forEach(el => { if (el !== input) el.value = data[key]; });
                     }
                 });
             }
@@ -571,27 +557,19 @@
             isEditing = !isEditing;
             mainContainer.classList.toggle('edit-mode');
             document.querySelectorAll('.editable-input').forEach(input => input.readOnly = !isEditing);
-            editText.textContent = isEditing ? "Guardar" : "Editar";
+            editText.textContent = isEditing ? "Salvar" : "Editar";
             toggleBtn.classList.toggle('bg-primary', isEditing);
             toggleBtn.classList.toggle('text-white', isEditing);
-            if (!isEditing) showToast("Alterações guardadas localmente.");
+            if (!isEditing) showToast("Alterações salvas.");
         });
 
-        const startTimeInput = document.getElementById('startTimeInput');
-        if (startTimeInput) startTimeInput.addEventListener('input', renderSchedule);
-        
+        document.getElementById('startTimeInput').addEventListener('input', renderSchedule);
         setInterval(updateLiveClock, 1000);
         renderSchedule();
 
-        function autoResizeTitle(tx) { 
-            if(tx) { 
-                tx.style.height = 'auto'; 
-                tx.style.height = tx.scrollHeight + 'px'; 
-            } 
-        }
-        
+        function autoResizeTitle(tx) { if(tx) { tx.style.height = 'auto'; tx.style.height = tx.scrollHeight + 'px'; } }
         window.addEventListener('resize', () => autoResizeTitle(document.querySelector('textarea[data-key="schoolName"]')));
-        setTimeout(() => autoResizeTitle(document.querySelector('textarea[data-key="schoolName"]')), 150);
+        setTimeout(() => autoResizeTitle(document.querySelector('textarea[data-key="schoolName"]')), 200);
     </script>
 </body>
 </html>
