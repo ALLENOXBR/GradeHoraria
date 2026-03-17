@@ -2,10 +2,9 @@
 <html lang="pt-br" class="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Grade Escolar Premium - E.E. Prof. Juvenília</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grade Escolar Premium - Turquesa Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Biblioteca para gerar PDF como imagem de alta fidelidade -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
         tailwind.config = {
@@ -13,40 +12,61 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#14B8A6', // Verde Turquesa
-                        accent: '#0F766E',  
+                        primary: '#0D9488', // Teal 600 (Turquesa Base)
+                        secondary: '#2DD4BF', // Teal 400 (Turquesa Claro)
+                        accent: '#0F766E', // Teal 700
                         darkBg: '#0F172A',
-                        darkCard: '#1E293B'
-                    },
-                    animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        darkCard: '#1E293B',
+                        success: '#22C55E'
                     }
                 }
             }
         }
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@700&display=swap');
         
         body { 
             font-family: 'Inter', sans-serif; 
-            -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: contain;
+            -webkit-tap-highlight-color: transparent; 
+            scroll-behavior: smooth;
+            overflow-x: hidden;
         }
+
         .font-digital { font-family: 'JetBrains Mono', monospace; }
 
-        .custom-scroll::-webkit-scrollbar { height: 4px; width: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #14B8A6; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #0D9488; border-radius: 10px; }
 
-        /* Responsividade Inteligente */
         .mobile-grid { display: block; }
         .desktop-table { display: none; }
-        @media (min-width: 1024px) {
+
+        @media (min-width: 1025px) {
             .mobile-grid { display: none; }
             .desktop-table { display: table; }
         }
 
-        /* Estilos de Edição */
+        .is-generating-pdf .mobile-grid { display: none !important; }
+        .is-generating-pdf .desktop-table { 
+            display: table !important; 
+            width: 1050px !important; 
+            margin: 0 !important; 
+        }
+        .is-generating-pdf .no-pdf { display: none !important; }
+        .is-generating-pdf #exportArea { 
+            width: 1050px !important; 
+            margin: 0 !important; 
+            padding: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .is-generating-pdf input.editable-input {
+            border: none !important;
+            background: transparent !important;
+        }
+
         .editable-input {
             background: transparent;
             border: none;
@@ -54,191 +74,256 @@
             text-align: inherit;
             color: inherit;
             transition: all 0.2s;
-            outline: none;
+            cursor: default;
+            font-weight: inherit;
         }
+
+        textarea.editable-input {
+            resize: none;
+            overflow: hidden;
+            display: block;
+            line-height: 1.2;
+        }
+        
         .edit-mode .editable-input {
-            background-color: rgba(20, 184, 166, 0.1);
-            box-shadow: inset 0 -2px 0 #14B8A6;
+            background-color: rgba(13, 148, 136, 0.1);
+            box-shadow: inset 0 -1px 0 rgba(13, 148, 136, 0.5);
             cursor: text;
         }
 
-        /* Destaques em Tempo Real */
-        .current-row { background-color: rgba(20, 184, 166, 0.05) !important; }
-        .active-cell { background-color: rgba(20, 184, 166, 0.12) !important; }
-        .current-card { 
-            border: 2px solid #14B8A6 !important; 
+        #pdfLoader {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.9);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+            font-weight: 800;
+        }
+
+        .current-row { background-color: rgba(13, 148, 136, 0.05) !important; }
+        .current-day-col { background-color: rgba(34, 197, 94, 0.03) !important; position: relative; }
+
+        .day-marker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background-color: #0D9488;
+            display: none;
+            z-index: 10;
+        }
+        
+        .active-day .day-marker {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+
+        .active-cell {
+            background-color: rgba(13, 148, 136, 0.12) !important;
+            box-shadow: inset 0 0 15px rgba(13, 148, 136, 0.05);
+        }
+
+        .current-card {
+            border: 2px solid #0D9488 !important;
             transform: scale(1.02);
-            box-shadow: 0 10px 20px -5px rgba(20, 184, 166, 0.3);
+            box-shadow: 0 10px 20px -5px rgba(13, 148, 136, 0.3);
+            z-index: 20;
         }
 
-        /* Classes para o PDF (Forçar formato de foto horizontal) */
-        .is-generating-pdf .mobile-grid { display: none !important; }
-        .is-generating-pdf .desktop-table { display: table !important; width: 1080px !important; }
-        .is-generating-pdf #exportArea { 
-            width: 1100px !important; 
-            margin: 0 !important;
-            padding: 0 !important;
-            border-radius: 0 !important;
+        @keyframes pulse-border {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
         }
-        .is-generating-pdf .no-pdf { display: none !important; }
-
-        #toast { visibility: hidden; min-width: 200px; background: #14B8A6; color: white; border-radius: 50px; padding: 12px 24px; position: fixed; z-index: 1000; left: 50%; bottom: 40px; transform: translateX(-50%); font-weight: 800; box-shadow: 0 10px 25px rgba(20, 184, 166, 0.4); }
-        #toast.show { visibility: visible; animation: slideUp 0.3s forwards; }
-        @keyframes slideUp { from { bottom: 0; opacity: 0; } to { bottom: 40px; opacity: 1; } }
+        .pulse { animation: pulse-border 2s infinite; }
+        #progressBar { transition: width 1s linear; }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-darkBg text-slate-900 dark:text-slate-100 transition-colors duration-300 min-h-screen">
+<body class="bg-slate-50 dark:bg-darkBg text-slate-900 dark:text-slate-100 transition-colors duration-300 min-h-screen flex flex-col overflow-x-hidden">
 
-    <div id="toast">Dados Guardados!</div>
-
-    <!-- Loader -->
-    <div id="pdfLoader" class="hidden fixed inset-0 bg-white/90 dark:bg-slate-900/95 z-[999] flex flex-col items-center justify-center backdrop-blur-sm">
-        <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p class="font-black text-primary tracking-tighter">ENQUADRANDO PDF...</p>
+    <div id="pdfLoader">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
+        <p class="text-lg">Gerando PDF Turquesa...</p>
     </div>
 
-    <!-- Navbar Corrigida para alinhamento com o corpo -->
-    <nav class="sticky top-0 z-[100] bg-white/80 dark:bg-darkCard/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 no-print">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="bg-primary p-2 rounded-xl shadow-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M8 7h6"/><path d="M8 11h8"/></svg>
+    <nav class="sticky top-0 z-[100] bg-white/90 dark:bg-darkCard/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 no-print w-full">
+        <div class="max-w-7xl mx-auto px-2 sm:px-4 h-16 flex items-center justify-between gap-2">
+            
+            <div class="flex items-center gap-2 sm:gap-4 overflow-hidden">
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <div class="bg-primary p-1.5 rounded-lg shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                    </div>
+                    <span class="font-extrabold text-xs sm:text-base tracking-tight hidden xs:inline">Grade<span class="text-primary dark:text-secondary">Master</span></span>
                 </div>
-                <div class="hidden sm:block flex flex-col leading-none">
-                    <span class="font-black text-lg tracking-tighter uppercase">Grade<span class="text-primary">Master</span></span>
+                
+                <div class="flex items-center bg-teal-600 px-2 py-1.5 rounded-lg sm:rounded-xl shadow-md border-none overflow-hidden shrink min-w-0">
+                    <div class="flex items-center gap-1.5 sm:gap-2 border-r border-teal-500/30 pr-2 sm:pr-3 mr-2 sm:mr-3 shrink-0">
+                        <span id="liveClock" class="font-black text-white text-[10px] sm:text-sm tracking-tighter tabular-nums">00:00:00</span>
+                        <span id="schoolStatus" class="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-red-500 shadow-sm border border-teal-400/20 shrink-0"></span>
+                    </div>
+                    <div id="liveDate" class="font-black text-white text-[8px] sm:text-xs uppercase opacity-90 tracking-tight truncate">--/--/-- • CARREGANDO</div>
                 </div>
             </div>
 
-            <!-- Monitor Real-Time -->
-            <div class="flex items-center bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
-                <div class="flex items-center gap-2 border-r border-slate-300 dark:border-slate-600 pr-3 mr-3">
-                    <span id="liveClock" class="font-black text-primary text-xs sm:text-sm font-digital">00:00:00</span>
-                    <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm transition-colors"></span>
-                </div>
-                <div id="liveDate" class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">00/00/2026</div>
-            </div>
-
-            <div class="flex items-center gap-2">
-                <button id="themeToggle" class="p-2.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                    <svg id="sunIcon" class="hidden dark:block w-5 h-5 text-teal-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>
-                    <svg id="moonIcon" class="block dark:hidden w-5 h-5 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+                <button id="themeToggle" class="p-1.5 sm:p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <svg id="sunIcon" class="hidden dark:block w-4 h-4 text-secondary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                    <svg id="moonIcon" class="block dark:hidden w-4 h-4 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
                 </button>
-                <button id="toggleEdit" class="px-4 py-2 rounded-xl font-black text-xs border border-slate-300 dark:border-slate-600 hover:border-primary transition-all">Editar</button>
-                <button onclick="generatePDF()" class="px-4 py-2 bg-primary text-white rounded-xl font-black text-xs shadow-lg shadow-teal-500/20 active:scale-95 transition-all uppercase">PDF</button>
+                <button id="toggleEdit" class="px-2 sm:px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white transition-all">
+                    <span id="editText">Editar</span>
+                </button>
+                <button onclick="generatePDF()" class="px-3 sm:px-4 py-1.5 bg-primary text-white rounded-lg font-black text-[10px] sm:text-xs shadow-md active:scale-95 transition-all">
+                    SALVAR PDF
+                </button>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content Corrigido -->
-    <main class="w-full max-w-6xl mx-auto p-4 sm:p-6 lg:py-10">
-        <div id="exportArea" class="bg-white dark:bg-darkCard rounded-[1.5rem] lg:rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
-            
-            <!-- Header Alinhado -->
-            <header class="p-6 sm:p-8 lg:p-10 border-b-[8px] border-primary bg-slate-50/50 dark:bg-slate-800/30 flex flex-col md:flex-row gap-6 items-center">
-                <div class="w-20 h-20 lg:w-32 lg:h-32 bg-primary rounded-[2rem] flex items-center justify-center shadow-xl shadow-teal-500/20 shrink-0 text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 lg:w-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2v-5"/></svg>
-                </div>
+    <div class="flex-1 w-full py-4 sm:py-8 px-2 sm:px-4 flex flex-col items-center overflow-x-hidden">
+        <main id="mainContainer" class="w-full max-w-[1100px]">
+            <div id="exportArea" class="bg-white dark:bg-darkCard rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
                 
-                <div class="flex-1 text-center md:text-left w-full">
-                    <h2 class="text-xl lg:text-3xl font-[900] text-slate-900 dark:text-white mb-6 leading-tight tracking-tighter">
-                        <textarea class="editable-input uppercase w-full" data-key="schoolName" readonly oninput="autoResize(this)">ESCOLA ESTADUAL PROFESSORA JUVENÍLIA FERREIRA DOS SANTOS</textarea>
-                    </h2>
+                <header class="p-4 sm:p-8 border-b-4 border-primary bg-teal-50/30 dark:bg-slate-800/30 flex flex-col md:flex-row gap-4 sm:gap-8 items-center md:items-center">
+                    <div class="w-16 h-16 sm:w-24 sm:h-24 bg-primary rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 sm:w-12 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M8 7h6"/><path d="M8 11h8"/></svg>
+                    </div>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-[10px] uppercase font-bold tracking-tight">
-                        <div class="border-l-4 border-primary pl-3 py-1 bg-slate-100/50 dark:bg-slate-800/50 rounded-r-lg">
-                            <span class="text-slate-400 block">Diretor</span>
-                            <input class="editable-input font-black text-slate-800 dark:text-slate-100" data-key="staff1" value="LUIZ ANTÔNIO DE SOUZA" readonly>
-                        </div>
-                        <div class="border-l-4 border-primary pl-3 py-1 bg-slate-100/50 dark:bg-slate-800/50 rounded-r-lg">
-                            <span class="text-slate-400 block">Vice</span>
-                            <input class="editable-input font-black text-slate-800 dark:text-slate-100" data-key="staff2" value="TÚLIO SIQUEIRA DE OLIVEIRA" readonly>
-                        </div>
-                        <div class="border-l-4 border-primary pl-3 py-1 bg-slate-100/50 dark:bg-slate-800/50 rounded-r-lg">
-                            <span class="text-slate-400 block">Supervisão</span>
-                            <input class="editable-input font-black text-slate-800 dark:text-slate-100" data-key="staff3" value="JACQUELINE CATALUNHA" readonly>
-                        </div>
-                        <div class="border-l-4 border-primary pl-3 py-1 bg-slate-100/50 dark:bg-slate-800/50 rounded-r-lg">
-                            <span class="text-slate-400 block">Coordenação</span>
-                            <input class="editable-input font-black text-slate-800 dark:text-slate-100" data-key="staff4" value="GIULIANA MARTIRA FERREIRA" readonly>
+                    <div class="flex-1 text-center md:text-left w-full">
+                        <h2 class="text-base sm:text-2xl font-black text-slate-900 dark:text-white mb-4 leading-tight">
+                            <textarea class="editable-input uppercase tracking-tight w-full" data-key="schoolName" readonly>ESCOLA ESTADUAL PROFESSORA JUVENÍLIA FERREIRA DOS SANTOS</textarea>
+                        </h2>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[9px] sm:text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
+                            <div class="flex items-center gap-2 border-l-2 sm:border-l-4 border-primary pl-2 bg-teal-50/40 dark:bg-slate-900/40 p-1 sm:p-1.5 rounded shadow-sm">
+                                <span class="shrink-0 opacity-70">DIRETOR:</span>
+                                <input class="editable-input text-slate-900 dark:text-slate-200 truncate" data-key="staff1" value="LUIZ ANTÔNIO DE SOUZA" readonly>
+                            </div>
+                            <div class="flex items-center gap-2 border-l-2 sm:border-l-4 border-primary pl-2 bg-teal-50/40 dark:bg-slate-900/40 p-1 sm:p-1.5 rounded shadow-sm">
+                                <span class="shrink-0 opacity-70">VICE:</span>
+                                <input class="editable-input text-slate-900 dark:text-slate-200 truncate" data-key="staff2" value="TÚLIO SIQUEIRA DE OLIVEIRA" readonly>
+                            </div>
+                            <div class="flex items-center gap-2 border-l-2 sm:border-l-4 border-primary pl-2 bg-teal-50/40 dark:bg-slate-900/40 p-1 sm:p-1.5 rounded shadow-sm">
+                                <span class="shrink-0 opacity-70">SUPERVISÃO:</span>
+                                <input class="editable-input text-slate-900 dark:text-slate-200 truncate" data-key="staff3" value="JACQUELINE CATALUNHA" readonly>
+                            </div>
+                            <div class="flex items-center gap-2 border-l-2 sm:border-l-4 border-primary pl-3 bg-teal-50/40 dark:bg-slate-900/40 p-1 sm:p-1.5 rounded shadow-sm">
+                                <span class="shrink-0 opacity-70">COORD:</span>
+                                <input class="editable-input text-slate-900 dark:text-slate-200 truncate" data-key="staff4" value="GIULIANA MARTIRA FERREIRA" readonly>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </header>
+                </header>
 
-            <!-- Status Bar Alinhada -->
-            <div class="px-6 sm:px-8 lg:px-10 py-4 bg-white dark:bg-slate-900 flex flex-col gap-4 border-b border-slate-200 dark:border-slate-800">
-                <div class="flex flex-wrap justify-between items-center gap-4">
-                    <div class="flex gap-6 font-black text-[10px] md:text-sm uppercase text-primary tracking-widest">
-                        <div class="flex items-center gap-2">
-                            <span class="opacity-40 text-[9px]">Turno</span>
-                            <input class="editable-input w-24" data-key="shift" value="NOTURNO" readonly>
+                <div class="px-4 py-4 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div class="flex gap-4 sm:gap-8 font-black text-[9px] sm:text-xs uppercase text-teal-700 dark:text-secondary">
+                            <div class="flex items-center gap-2">
+                                <span class="opacity-40 text-[8px]">TURNO:</span>
+                                <input class="editable-input w-20 sm:w-24" data-key="shift" value="NOTURNO" readonly>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="opacity-40 text-[8px]">TURMA:</span>
+                                <input class="editable-input w-16 sm:w-24" data-key="classLevel" value="3º EJA" readonly>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span class="opacity-40 text-[9px]">Turma</span>
-                            <input class="editable-input w-24" data-key="classLevel" value="3º EJA" readonly>
+                        
+                        <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto items-center">
+                            <div class="text-[9px] sm:text-[10px] font-bold bg-white dark:bg-slate-800 px-2 sm:px-3 py-1.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-2">
+                                <span class="opacity-50 text-slate-400">INÍCIO</span>
+                                <input id="startTimeInput" class="editable-input w-10 text-center font-black text-primary" data-key="t1" value="19:00" readonly>
+                            </div>
+                            <div class="text-[9px] sm:text-[10px] font-bold bg-white dark:bg-slate-800 px-2 sm:px-3 py-1.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-2">
+                                <span class="opacity-50 text-slate-400">FIM</span>
+                                <span id="endTimeDisplay" class="font-black text-slate-900 dark:text-white tabular-nums">--:--</span>
+                            </div>
+                            <div class="col-span-2 sm:col-auto text-[9px] sm:text-[10px] font-black bg-primary text-white px-3 py-1.5 rounded-lg shadow-md flex items-center justify-center gap-2">
+                                <span id="totalDurationDisplay">0H 00MIN</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <div class="text-[10px] font-bold bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 px-4 py-1.5 rounded-full flex items-center gap-2">
-                            <span class="opacity-50 uppercase">Entrada:</span>
-                            <input id="startTimeInput" class="editable-input w-12 text-center font-black text-primary" data-key="t1" value="19:00" readonly>
+
+                    <div class="w-full mt-4 no-pdf">
+                        <div class="flex justify-between items-center mb-1 text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-400">
+                            <span>Jornada Escolar</span>
+                            <span id="progressPercentage" class="text-primary font-bold tabular-nums">0%</span>
                         </div>
-                        <div class="text-[10px] font-black bg-primary text-white px-4 py-2 rounded-full shadow-lg">
-                            SAÍDA: <span id="endTimeDisplay">--:--</span>
+                        <div class="h-1.5 sm:h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
+                            <div id="progressBar" class="h-full w-0 bg-gradient-to-r from-secondary to-primary rounded-full relative">
+                                <div class="absolute inset-0 bg-white/20 animate-pulse"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Progress Alinhada -->
-                <div class="w-full no-pdf px-1">
-                    <div class="flex justify-between items-center mb-1 text-[9px] font-black uppercase text-slate-400">
-                        <span>Aulas Concluídas</span>
-                        <span id="progressPercentage" class="text-primary">0%</span>
-                    </div>
-                    <div class="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <div id="progressBar" class="h-full w-0 bg-primary rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(20,184,166,0.5)]"></div>
-                    </div>
+                <div id="mobileSchedule" class="mobile-grid p-3 sm:p-4 space-y-6 bg-slate-50 dark:bg-slate-900/10"></div>
+
+                <div class="desktop-table w-full overflow-x-auto custom-scroll">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 dark:bg-slate-800 text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">
+                                <th class="p-4 border-r border-slate-200 dark:border-slate-700 w-32 relative">Horário</th>
+                                <th data-day-index="1" class="p-4 border-r border-slate-200 dark:border-slate-700 relative">
+                                    <div class="day-marker"></div>
+                                    Segunda
+                                </th>
+                                <th data-day-index="2" class="p-4 border-r border-slate-200 dark:border-slate-700 relative">
+                                    <div class="day-marker"></div>
+                                    Terça
+                                </th>
+                                <th data-day-index="3" class="p-4 border-r border-slate-200 dark:border-slate-700 relative">
+                                    <div class="day-marker"></div>
+                                    Quarta
+                                </th>
+                                <th data-day-index="4" class="p-4 border-r border-slate-200 dark:border-slate-700 relative">
+                                    <div class="day-marker"></div>
+                                    Quinta
+                                </th>
+                                <th data-day-index="5" class="p-4 relative">
+                                    <div class="day-marker"></div>
+                                    Sexta
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="desktopBody"></tbody>
+                    </table>
                 </div>
+
+                <footer class="p-5 sm:p-6 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-200 dark:border-slate-700">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div class="text-center md:text-left">
+                            <span class="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1 block">Digital School System</span>
+                            <span class="text-xs sm:text-sm font-bold uppercase">2026 • <span class="text-primary dark:text-secondary font-black">E.E. Professora Juvenília</span></span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-32 sm:w-48 h-px bg-slate-300 dark:bg-slate-600 mb-2"></div>
+                            <span class="text-[8px] sm:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest opacity-70">Secretaria de Educação</span>
+                        </div>
+                    </div>
+                </footer>
             </div>
-
-            <!-- Mobile View -->
-            <div id="mobileSchedule" class="mobile-grid p-4 sm:p-6 space-y-6 bg-slate-50/50 dark:bg-slate-900/10"></div>
-
-            <!-- Desktop View -->
-            <div class="desktop-table w-full overflow-x-auto custom-scroll">
-                <table class="w-full border-collapse">
-                    <thead>
-                        <tr class="bg-slate-50 dark:bg-slate-800 text-[11px] font-black uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
-                            <th class="p-6 border-r border-slate-200 dark:border-slate-700 w-36 text-center">Horário</th>
-                            <th data-day-idx="1" class="p-4 border-r border-slate-200 dark:border-slate-700">Segunda</th>
-                            <th data-day-idx="2" class="p-4 border-r border-slate-200 dark:border-slate-700">Terça</th>
-                            <th data-day-idx="3" class="p-4 border-r border-slate-200 dark:border-slate-700">Quarta</th>
-                            <th data-day-idx="4" class="p-4 border-r border-slate-200 dark:border-slate-700">Quinta</th>
-                            <th data-day-idx="5" class="p-4">Sexta</th>
-                        </tr>
-                    </thead>
-                    <tbody id="desktopBody"></tbody>
-                </table>
-            </div>
-
-            <!-- Footer Alinhado -->
-            <footer class="p-6 sm:p-8 lg:p-10 bg-white dark:bg-darkCard border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-6">
-                <div class="text-center md:text-left">
-                    <span class="text-[9px] font-black uppercase tracking-[0.4em] text-slate-300 block mb-1">Grade Premium v5.1</span>
-                    <span class="text-sm font-bold tracking-tighter">2026 • <span class="text-primary uppercase font-black">E.E. Professora Juvenília Ferreira</span></span>
-                </div>
-                <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700">Documento Oficial • Secretaria de Educação</div>
-            </footer>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <script>
         const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+        
         const scheduleData = [
-            { type: 'class', items: [['Soluções Mat.', 'Vilson'], ['Português', 'Elza'], ['Intervenção Cidadã', 'Marcelo'], ['Química', 'Pollyana'], ['Biologia', 'Ranner']] },
+            { type: 'class', items: [['Intervenção Cidadã', 'Marcelo'], ['Português', 'Elza'], ['Matemática', 'Crislaine'], ['Química', 'Pollyana'], ['Biologia', 'Ranner']] },
             { type: 'class', items: [['História', 'Geane'], ['Arte', 'Cristino'], ['Português', 'Elza'], ['Matemática', 'Crislaine'], ['Física', 'Daniel']] },
-            { type: 'break', label: 'Recreio', content: 'Intervalo de Convivência' },
-            { type: 'class', items: [['Matemática', 'Crislaine'], ['Geografia', 'Marcelo'], ['Sociologia', 'Fabiola'], ['Português', 'Elza'], ['Matemática', 'Crislaine']] },
+            { type: 'break', label: 'Intervalo', content: 'Convivência Social' },
+            { type: 'class', items: [['Matemática', 'Crislaine'], ['Geografia', 'Marcelo'], ['Sociologia', 'Fabíola'], ['Português', 'Elza'], ['Soluções Mat.', 'Vilson']] },
             { type: 'class', items: [['Português', 'Elza'], ['Matemática', 'Crislaine'], ['Filosofia', 'José'], ['Biologia', 'Ranner'], ['Inglês', 'Ana Paula']] }
         ];
 
@@ -246,121 +331,250 @@
 
         function addMinutes(time, mins) {
             let [h, m] = time.split(':').map(Number);
-            let date = new Date(); date.setHours(h, m + mins, 0);
+            let date = new Date();
+            date.setHours(h, m + mins, 0);
             return date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0');
         }
 
+        function getDuration(start, end) {
+            let [h1, m1] = start.split(':').map(Number);
+            let [h2, m2] = end.split(':').map(Number);
+            let totalMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (totalMinutes < 0) totalMinutes += 24 * 60;
+            return `${Math.floor(totalMinutes / 60)}H ${(totalMinutes % 60).toString().padStart(2, '0')}MIN`;
+        }
+
         function calculateTimeline(startTime) {
+            const classDuration = 45; 
+            const breakDuration = 30;  
             let current = startTime;
             let timeline = [];
+
             scheduleData.forEach(row => {
-                let end = addMinutes(current, row.type === 'class' ? 50 : 20);
+                let end = addMinutes(current, row.type === 'class' ? classDuration : breakDuration);
                 timeline.push({ start: current, end: end, type: row.type });
                 current = end;
             });
             return timeline;
         }
 
+        function updateLiveClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('pt-BR');
+            const dayNum = now.getDate().toString().padStart(2, '0');
+            const monthNum = (now.getMonth() + 1).toString().padStart(2, '0');
+            const yearNum = now.getFullYear();
+            const rawDay = now.getDay(); 
+            const weekDayIdx = rawDay === 0 ? 6 : rawDay - 1; 
+            const weekDayName = days[weekDayIdx] || 'Fim de Semana';
+            const dateStr = `${dayNum}/${monthNum}/${yearNum} • ${weekDayName}`;
+            
+            const liveClock = document.getElementById('liveClock');
+            const liveDate = document.getElementById('liveDate');
+            if(liveClock) liveClock.textContent = timeStr;
+            if(liveDate) liveDate.textContent = dateStr;
+
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            const statusDot = document.getElementById('schoolStatus');
+            
+            let currentIdx = -1;
+            globalTimeline.forEach((time, idx) => {
+                const [hS, mS] = time.start.split(':').map(Number);
+                const [hE, mE] = time.end.split(':').map(Number);
+                const startMins = hS * 60 + mS;
+                const endMins = hE * 60 + mE;
+                if (currentMinutes >= startMins && currentMinutes < endMins) currentIdx = idx;
+            });
+
+            document.querySelectorAll('.current-row').forEach(el => el.classList.remove('current-row'));
+            document.querySelectorAll('.current-day-col').forEach(el => el.classList.remove('current-day-col'));
+            document.querySelectorAll('.active-cell').forEach(el => el.classList.remove('active-cell'));
+            document.querySelectorAll('.current-card').forEach(el => el.classList.remove('current-card'));
+            document.querySelectorAll('.active-day').forEach(el => el.classList.remove('active-day'));
+
+            const isSchoolDay = rawDay >= 1 && rawDay <= 5;
+            
+            if (isSchoolDay) {
+                document.querySelectorAll(`th[data-day-index="${rawDay}"]`).forEach(el => el.classList.add('active-day'));
+                document.querySelectorAll(`#mobile-day-sec-${rawDay}`).forEach(el => el.classList.add('active-day'));
+
+                if (currentIdx !== -1) {
+                    statusDot.className = 'w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm pulse';
+                    document.querySelectorAll(`[data-row-index="${currentIdx}"]`).forEach(el => el.classList.add('current-row'));
+                    document.querySelectorAll(`[data-day-index="${rawDay}"]`).forEach(el => el.classList.add('current-day-col'));
+                    document.querySelectorAll(`[data-cell-id="r${currentIdx}d${rawDay}"]`).forEach(el => el.classList.add('active-cell'));
+                    document.querySelectorAll(`[data-card-day-index="${rawDay}"][data-card-row-index="${currentIdx}"]`).forEach(el => el.classList.add('current-card'));
+                } else {
+                    statusDot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm';
+                    document.querySelectorAll(`[data-day-index="${rawDay}"]`).forEach(el => el.classList.add('current-day-col'));
+                }
+            } else {
+                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm';
+            }
+
+            updateProgressBar(currentMinutes, isSchoolDay);
+        }
+
+        function updateProgressBar(nowMins, isSchoolDay) {
+            const progressBar = document.getElementById('progressBar');
+            const progressPercentage = document.getElementById('progressPercentage');
+            if (!progressBar) return;
+
+            if (globalTimeline.length === 0 || !isSchoolDay) {
+                 progressBar.style.width = '0%';
+                 progressPercentage.textContent = '0%';
+                 return;
+            }
+
+            const startTime = document.getElementById('startTimeInput').value;
+            const endTime = globalTimeline[globalTimeline.length - 1].end;
+            const [hS, mS] = startTime.split(':').map(Number);
+            const [hE, mE] = endTime.split(':').map(Number);
+            
+            let startMinsTotal = hS * 60 + mS;
+            let endMinsTotal = hE * 60 + mE;
+            if (endMinsTotal < startMinsTotal) endMinsTotal += 24 * 60;
+            
+            let adjustedNow = nowMins;
+            if (adjustedNow < startMinsTotal && nowMins < 120) adjustedNow += 24 * 60;
+
+            let percentage = 0;
+            if (adjustedNow >= startMinsTotal) {
+                const totalMins = endMinsTotal - startMinsTotal;
+                const elapsedMins = adjustedNow - startMinsTotal;
+                percentage = Math.min(100, Math.floor((elapsedMins / totalMins) * 100));
+            }
+
+            progressBar.style.width = percentage + '%';
+            progressPercentage.textContent = percentage + '%';
+        }
+
         function renderSchedule() {
             const desktopBody = document.getElementById('desktopBody');
             const mobileSchedule = document.getElementById('mobileSchedule');
             const startTime = document.getElementById('startTimeInput').value || '19:00';
+            const endTimeDisplay = document.getElementById('endTimeDisplay');
+            const totalDurationDisplay = document.getElementById('totalDurationDisplay');
             
             globalTimeline = calculateTimeline(startTime);
-            document.getElementById('endTimeDisplay').textContent = globalTimeline[globalTimeline.length - 1].end;
+            
+            if (globalTimeline.length > 0) {
+                const finalTime = globalTimeline[globalTimeline.length - 1].end;
+                endTimeDisplay.textContent = finalTime;
+                totalDurationDisplay.textContent = getDuration(startTime, finalTime);
+            }
 
             let desktopHTML = '';
             let mobileHTMLByDay = days.map((day, idx) => ({ day, content: '', dayIdx: idx + 1 }));
+            let classCounter = 1;
 
             scheduleData.forEach((row, rIdx) => {
-                const time = globalTimeline[rIdx];
-                const timeLabel = `${time.start} - ${time.end}`;
+                const timeInfo = globalTimeline[rIdx];
+                const timeLabel = `${timeInfo.start} - ${timeInfo.end}`;
 
                 if (row.type === 'break') {
-                    desktopHTML += `<tr data-row-idx="${rIdx}" class="bg-primary text-white border-y border-teal-600/20"><td class="p-6 text-center font-black text-[10px]">${timeLabel}</td><td colspan="5" class="p-4 text-center text-xl font-black uppercase tracking-[0.5em] italic opacity-80">${row.content}</td></tr>`;
+                    desktopHTML += `
+                        <tr data-row-index="${rIdx}" class="bg-primary border-y border-teal-600/30 transition-colors">
+                            <td class="p-4 text-center border-r border-teal-700/20">
+                                <div class="text-[10px] font-black text-white">${timeLabel}</div>
+                                <div class="text-[8px] font-bold text-teal-100 uppercase italic">Intervalo</div>
+                            </td>
+                            <td colspan="5" class="p-4 text-center text-lg font-black uppercase tracking-[0.5em] text-white italic">
+                                • ${row.content} •
+                            </td>
+                        </tr>
+                    `;
                     mobileHTMLByDay.forEach(d => {
-                        d.content += `<div data-card-row-idx="${rIdx}" data-card-day-idx="${d.dayIdx}" class="bg-primary/10 border-l-8 border-primary p-4 my-6 rounded-2xl text-center"><div class="text-[9px] font-black text-primary uppercase mb-1">INTERVALO • ${timeLabel}</div><div class="text-sm font-black italic opacity-70">${row.content}</div></div>`;
+                        d.content += `
+                            <div data-card-day-index="${d.dayIdx}" data-card-row-index="${rIdx}" class="bg-primary/20 border-l-4 border-primary p-3 my-4 rounded-r shadow-sm text-center transition-all">
+                                <div class="text-[8px] font-black text-teal-800 dark:text-secondary uppercase tracking-widest mb-1">INTERVALO • ${timeLabel}</div>
+                                <div class="text-[12px] font-black text-slate-800 dark:text-slate-200 italic">${row.content}</div>
+                            </div>
+                        `;
                     });
                 } else {
-                    let cells = `<td class="p-6 border-r border-slate-100 dark:border-slate-800 text-center bg-slate-50/50 dark:bg-slate-800/20"><div class="text-[11px] font-black">${timeLabel}</div><div class="text-[8px] font-bold text-slate-400 uppercase">${rIdx >= 2 ? rIdx : rIdx + 1}º HORÁRIO</div></td>`;
+                    let tdCells = `
+                        <td class="p-4 border-r border-slate-200 dark:border-slate-700 text-center bg-slate-50/50 dark:bg-slate-800/20">
+                            <div class="text-[10px] font-black text-slate-900 dark:text-white tabular-nums">${timeLabel}</div>
+                            <div class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">${classCounter}º HORÁRIO</div>
+                        </td>
+                    `;
+                    
                     row.items.forEach((cell, cIdx) => {
                         const dayIdx = cIdx + 1;
-                        cells += `<td data-day-idx="${dayIdx}" data-cell-id="r${rIdx}d${dayIdx}" class="p-4 border-r border-slate-100 dark:border-slate-800 text-center transition-all"><input class="editable-input font-black text-sm block mb-1" data-key="r${rIdx}c${cIdx}s" value="${cell[0]}" readonly><div class="text-[10px] font-bold text-primary uppercase flex items-center justify-center gap-1 bg-teal-500/5 py-0.5 rounded"><input class="editable-input w-auto text-center" data-key="r${rIdx}c${cIdx}p" value="${cell[1]}" readonly></div></td>`;
-                        mobileHTMLByDay[cIdx].content += `<div data-card-row-idx="${rIdx}" data-card-day-idx="${dayIdx}" class="flex items-center gap-5 p-5 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 mb-5 shadow-lg active:scale-95 transition-all"><div class="text-[10px] font-black text-slate-300 w-16 leading-tight border-r border-slate-100 pr-4 shrink-0">${time.start}<br>${time.end}</div><div class="flex-1"><input class="editable-input font-black text-lg block" data-key="r${rIdx}c${cIdx}s" value="${cell[0]}" readonly><div class="text-xs text-primary font-bold flex items-center gap-1"><span class="opacity-40">PROF:</span><input class="editable-input w-auto" data-key="r${rIdx}c${cIdx}p" value="${cell[1]}" readonly></div></div></div>`;
+                        const keyS = `r${rIdx}c${cIdx}s`;
+                        const keyP = `r${rIdx}c${cIdx}p`;
+                        
+                        tdCells += `
+                            <td data-day-index="${dayIdx}" data-cell-id="r${rIdx}d${dayIdx}" class="p-3 border-r border-slate-200 dark:border-slate-700 text-center hover:bg-teal-50 dark:hover:bg-teal-900/10 transition-all">
+                                <input class="editable-input font-black text-[11px] block mb-0.5" data-key="${keyS}" value="${cell[0]}" readonly>
+                                <div class="text-[9px] font-bold text-teal-700 dark:text-secondary uppercase flex items-center justify-center gap-1 bg-teal-500/5 py-0.5 rounded">
+                                    <input class="editable-input w-auto text-center" data-key="${keyP}" value="${cell[1]}" readonly>
+                                </div>
+                            </td>
+                        `;
+
+                        mobileHTMLByDay[cIdx].content += `
+                            <div data-card-day-index="${dayIdx}" data-card-row-index="${rIdx}" class="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 mb-3 shadow-md transition-all">
+                                <div class="text-[9px] font-black text-slate-400 w-16 leading-tight uppercase border-r border-slate-100 dark:border-slate-700 pr-2 shrink-0 tabular-nums text-center">
+                                    ${timeInfo.start}<br><span class="text-[8px] opacity-60">${timeInfo.end}</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <input class="editable-input font-black text-sm block mb-1 truncate" data-key="${keyS}" value="${cell[0]}" readonly>
+                                    <div class="text-[10px] text-teal-700 dark:text-secondary font-bold uppercase flex items-center gap-1 truncate">
+                                        <span class="opacity-40 font-bold">PROF:</span>
+                                        <input class="editable-input w-auto truncate" data-key="${keyP}" value="${cell[1]}" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
                     });
-                    desktopHTML += `<tr data-row-idx="${rIdx}" class="border-b border-slate-50 dark:border-slate-800">${cells}</tr>`;
+                    desktopHTML += `<tr data-row-index="${rIdx}" class="border-b border-slate-100 dark:border-slate-800 transition-colors">${tdCells}</tr>`;
+                    classCounter++;
                 }
             });
 
             desktopBody.innerHTML = desktopHTML;
-            mobileSchedule.innerHTML = mobileHTMLByDay.map(day => `<section class="w-full"><h3 class="flex items-center gap-4 mb-6"><span class="px-6 py-2 bg-primary text-white font-black uppercase text-[11px] rounded-2xl shadow-lg">${day.day}</span><div class="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent"></div></h3>${day.content}</section>`).join('');
+            
+            let mobileFinalHTML = '';
+            mobileHTMLByDay.forEach(dayObj => {
+                mobileFinalHTML += `
+                    <section id="mobile-day-sec-${dayObj.dayIdx}" class="max-w-md mx-auto w-full relative">
+                        <div class="day-marker !h-1 !top-[-10px] rounded-full"></div>
+                        <h3 class="flex items-center gap-3 mb-4">
+                            <span class="px-3 py-1 bg-teal-600 text-white font-black uppercase tracking-widest text-[10px] rounded-lg shadow-md">${dayObj.day}</span>
+                            <div class="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+                        </h3>
+                        ${dayObj.content}
+                    </section>
+                `;
+            });
+            mobileSchedule.innerHTML = mobileFinalHTML;
 
             attachInputEvents();
             loadData();
+            autoResizeTitle();
             updateLiveClock();
         }
 
-        function updateLiveClock() {
-            const now = new Date();
-            document.getElementById('liveClock').textContent = now.toLocaleTimeString('pt-BR');
-            document.getElementById('liveDate').textContent = now.toLocaleDateString('pt-BR');
-
-            const day = now.getDay();
-            const mins = now.getHours() * 60 + now.getMinutes();
-            const isSchoolDay = day >= 1 && day <= 5;
-            
-            document.querySelectorAll('.current-row, .active-cell, .current-card').forEach(el => el.classList.remove('current-row', 'active-cell', 'current-card'));
-
-            let currentIdx = -1;
-            globalTimeline.forEach((t, i) => {
-                const s = t.start.split(':').map(Number);
-                const e = t.end.split(':').map(Number);
-                if (mins >= (s[0]*60+s[1]) && mins < (e[0]*60+e[1])) currentIdx = i;
-            });
-
-            const statusDot = document.getElementById('statusDot');
-            if (isSchoolDay && currentIdx !== -1) {
-                statusDot.classList.replace('bg-red-500', 'bg-green-500');
-                document.querySelector(`[data-row-idx="${currentIdx}"]`)?.classList.add('current-row');
-                document.querySelector(`[data-cell-id="r${currentIdx}d${day}"]`)?.classList.add('active-cell');
-                document.querySelectorAll(`[data-card-day-idx="${day}"][data-card-row-idx="${currentIdx}"]`).forEach(c => c.classList.add('current-card'));
-            } else {
-                statusDot.classList.replace('bg-green-500', 'bg-red-500');
-            }
-
-            if (globalTimeline.length) {
-                const startMins = globalTimeline[0].start.split(':').map(Number).reduce((h, m) => h * 60 + m);
-                const endMins = globalTimeline[globalTimeline.length - 1].end.split(':').map(Number).reduce((h, m) => h * 60 + m);
-                let pct = isSchoolDay ? Math.min(100, Math.max(0, Math.floor(((mins - startMins) / (endMins - startMins)) * 100))) : 0;
-                document.getElementById('progressBar').style.width = pct + '%';
-                document.getElementById('progressPercentage').textContent = pct + '%';
-            }
-        }
-
-        async function generatePDF() {
-            const loader = document.getElementById('pdfLoader');
-            loader.style.display = 'flex';
-            document.body.classList.add('is-generating-pdf');
-            const element = document.getElementById('exportArea');
-            const opt = { margin: [5, 5], filename: 'Grade_Escolar.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 3, useCORS: true, windowWidth: 1200 }, jsPDF: { format: 'a4', orientation: 'landscape' } };
-            try {
-                await new Promise(r => setTimeout(r, 800));
-                await html2pdf().set(opt).from(element).save();
-            } finally {
-                document.body.classList.remove('is-generating-pdf');
-                loader.style.display = 'none';
-                autoResize(document.querySelector('textarea[data-key="schoolName"]'));
-            }
-        }
-
+        const html = document.documentElement;
+        const themeToggle = document.getElementById('themeToggle');
         const toggleBtn = document.getElementById('toggleEdit');
+        const editText = document.getElementById('editText');
+        const mainContainer = document.getElementById('mainContainer');
+        const startTimeInput = document.getElementById('startTimeInput');
         let isEditing = false;
 
-        document.getElementById('themeToggle').addEventListener('click', () => {
-            document.documentElement.classList.toggle('dark');
-            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
         });
-        if (localStorage.theme === 'dark') document.documentElement.classList.add('dark');
+
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+        }
+
+        startTimeInput.addEventListener('input', renderSchedule);
 
         function saveData() {
             const data = {};
@@ -368,18 +582,18 @@
                 const key = input.getAttribute('data-key');
                 if(key) data[key] = input.value;
             });
-            localStorage.setItem('grade_v5_final', JSON.stringify(data));
+            localStorage.setItem('grade_v2026_turquoise', JSON.stringify(data));
         }
 
         function loadData() {
-            const saved = localStorage.getItem('grade_v5_final');
-            if (saved) {
-                const data = JSON.parse(saved);
+            const savedData = localStorage.getItem('grade_v2026_turquoise');
+            if (savedData) {
+                const data = JSON.parse(savedData);
                 document.querySelectorAll('.editable-input').forEach(input => {
                     const key = input.getAttribute('data-key');
                     if (data[key]) {
                         input.value = data[key];
-                        document.querySelectorAll(`[data-key="${key}"]`).forEach(el => { if (el !== input) el.value = data[key]; });
+                        document.querySelectorAll(`[data-key="${key}"]`).forEach(el => el.value = data[key]);
                     }
                 });
             }
@@ -387,31 +601,75 @@
 
         function attachInputEvents() {
             document.querySelectorAll('.editable-input').forEach(input => {
-                input.oninput = (e) => {
+                input.addEventListener('input', (e) => {
                     const key = e.target.getAttribute('data-key');
-                    document.querySelectorAll(`[data-key="${key}"]`).forEach(el => { if (el !== e.target) el.value = e.target.value; });
+                    const value = e.target.value;
+                    document.querySelectorAll(`[data-key="${key}"]`).forEach(el => {
+                        if (el !== e.target) el.value = value;
+                    });
                     saveData();
-                    if (key === 't1') renderSchedule();
-                };
+                });
             });
         }
 
         toggleBtn.addEventListener('click', () => {
             isEditing = !isEditing;
-            document.querySelectorAll('.editable-input').forEach(i => i.readOnly = !isEditing);
-            toggleBtn.textContent = isEditing ? "Salvar" : "Editar";
+            mainContainer.classList.toggle('edit-mode');
+            document.querySelectorAll('.editable-input').forEach(input => input.readOnly = !isEditing);
+            editText.textContent = isEditing ? "Salvar" : "Editar";
             toggleBtn.classList.toggle('bg-primary', isEditing);
-            toggleBtn.classList.toggle('text-white', isEditing);
+            if (isEditing) toggleBtn.classList.add('text-white');
+            else toggleBtn.classList.remove('text-white');
+            
             if (!isEditing) saveData();
+            autoResizeTitle();
         });
 
-        document.getElementById('startTimeInput').addEventListener('input', renderSchedule);
+        async function generatePDF() {
+            const loader = document.getElementById('pdfLoader');
+            const element = document.getElementById('exportArea');
+            const schoolName = document.querySelector('[data-key="schoolName"]').value || 'Grade';
+            
+            loader.style.display = 'flex';
+            document.body.classList.add('is-generating-pdf');
+
+            const opt = {
+                margin: 0,
+                filename: `Grade_Turquesa_${schoolName.substring(0,25).replace(/ /g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true, 
+                    logging: false, 
+                    windowWidth: 1100,
+                    scrollY: 0,
+                    scrollX: 0
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+                pagebreak: { mode: 'avoid-all' }
+            };
+
+            try {
+                await new Promise(r => setTimeout(r, 500));
+                await html2pdf().set(opt).from(element).save();
+            } finally {
+                document.body.classList.remove('is-generating-pdf');
+                loader.style.display = 'none';
+                autoResizeTitle();
+            }
+        }
+
+        function autoResizeTitle() {
+            const tx = document.querySelector('textarea[data-key="schoolName"]');
+            if (tx) {
+                tx.style.height = 'auto';
+                tx.style.height = tx.scrollHeight + 'px';
+            }
+        }
+
+        window.addEventListener('resize', autoResizeTitle);
         setInterval(updateLiveClock, 1000);
         renderSchedule();
-
-        function autoResize(tx) { if(tx) { tx.style.height = 'auto'; tx.style.height = tx.scrollHeight + 'px'; } }
-        window.addEventListener('resize', () => autoResize(document.querySelector('textarea[data-key="schoolName"]')));
-        setTimeout(() => autoResize(document.querySelector('textarea[data-key="schoolName"]')), 300);
     </script>
 </body>
 </html>
